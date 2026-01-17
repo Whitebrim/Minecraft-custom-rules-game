@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "deathgame",
+  "version": "${version}",
+  "name": "Death Game",
+  "description": "A game with secret rules that kill players",
+  "authors": [
+    "Brim"
+  ],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/deathgame/icon.png",
+  "environment": "server",
+  "entrypoints": {
+    "server": [
+      "com.deathgame.DeathGameMod"
+    ]
+  },
+  "mixins": [],
+  "depends": {
+    "fabricloader": ">=0.16.5",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
