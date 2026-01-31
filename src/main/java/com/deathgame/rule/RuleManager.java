@@ -133,6 +133,16 @@ public class RuleManager {
         }
     }
     
+    /**
+     * Called when a participant respawns after death.
+     * Notifies all rules so they can reset per-player state.
+     */
+    public void onPlayerRespawn(ServerPlayerEntity player) {
+        for (Rule rule : rules) {
+            rule.onPlayerRespawn(player);
+        }
+    }
+    
     public void hideAllRules() {
         for (int i = 1; i <= 10; i++) {
             revealedRules.put(i, false);

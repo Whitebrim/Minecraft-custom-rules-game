@@ -25,6 +25,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import it.unimi.dsi.fastutil.ints.IntList;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -292,6 +293,19 @@ public class GameManager {
     
     public boolean isParticipant(ServerPlayerEntity player) {
         return participants.contains(player.getUuid());
+    }
+    
+    public List<ServerPlayerEntity> getOnlineParticipants() {
+        List<ServerPlayerEntity> online = new ArrayList<>();
+        if (server == null) return online;
+        
+        for (UUID uuid : participants) {
+            ServerPlayerEntity player = server.getPlayerManager().getPlayer(uuid);
+            if (player != null) {
+                online.add(player);
+            }
+        }
+        return online;
     }
     
     public boolean isGameRunning() {

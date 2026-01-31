@@ -48,7 +48,7 @@ public abstract class AbstractRule implements Rule {
     }
     
     protected boolean isValidTarget(ServerPlayerEntity player) {
-        if (player == null || player.isSpectator() || player.isCreative()) {
+        if (player == null || player.isSpectator() || player.isCreative() || player.isDead()) {
             return false;
         }
         

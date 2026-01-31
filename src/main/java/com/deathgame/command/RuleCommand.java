@@ -13,6 +13,7 @@ import net.minecraft.util.Formatting;
 public class RuleCommand {
     
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+        // Admin commands - require permission level 2
         dispatcher.register(
             CommandManager.literal("rule")
                 .requires(source -> source.hasPermissionLevel(2))
@@ -25,8 +26,12 @@ public class RuleCommand {
                 .then(CommandManager.literal("reveal")
                     .then(CommandManager.argument("id", IntegerArgumentType.integer(1, 10))
                         .executes(RuleCommand::revealRule)))
-                .then(CommandManager.literal("list")
-                    .executes(RuleCommand::listRules))
+        );
+        
+        // /rulelist - available to all players
+        dispatcher.register(
+            CommandManager.literal("rulelist")
+                .executes(RuleCommand::listRules)
         );
     }
     
