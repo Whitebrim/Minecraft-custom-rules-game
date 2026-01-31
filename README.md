@@ -24,7 +24,7 @@
    gradlew.bat build
    ```
 
-Готовый JAR файл: `build/libs/deathgame-1.0.0.jar`
+Готовый JAR файл: `build/libs/deathgame-x.x.x.jar`
 
 ## Команды
 

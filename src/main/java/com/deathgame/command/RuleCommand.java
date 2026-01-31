@@ -18,13 +18,13 @@ public class RuleCommand {
             CommandManager.literal("rule")
                 .requires(source -> source.hasPermissionLevel(2))
                 .then(CommandManager.literal("enable")
-                    .then(CommandManager.argument("id", IntegerArgumentType.integer(1, 10))
+                    .then(CommandManager.argument("id", IntegerArgumentType.integer(1, RuleManager.TOTAL_RULES))
                         .executes(RuleCommand::enableRule)))
                 .then(CommandManager.literal("disable")
-                    .then(CommandManager.argument("id", IntegerArgumentType.integer(1, 10))
+                    .then(CommandManager.argument("id", IntegerArgumentType.integer(1, RuleManager.TOTAL_RULES))
                         .executes(RuleCommand::disableRule)))
                 .then(CommandManager.literal("reveal")
-                    .then(CommandManager.argument("id", IntegerArgumentType.integer(1, 10))
+                    .then(CommandManager.argument("id", IntegerArgumentType.integer(1, RuleManager.TOTAL_RULES))
                         .executes(RuleCommand::revealRule)))
         );
         
@@ -40,6 +40,7 @@ public class RuleCommand {
         RuleManager ruleManager = DeathGameMod.getInstance().getRuleManager();
         
         if (ruleManager.enableRule(ruleId)) {
+            DeathGameMod.getInstance().getGameManager().saveState();
             context.getSource().sendFeedback(
                 () -> Text.literal("Правило #" + ruleId + " включено.").formatted(Formatting.GREEN),
                 true
@@ -56,6 +57,7 @@ public class RuleCommand {
         RuleManager ruleManager = DeathGameMod.getInstance().getRuleManager();
         
         if (ruleManager.disableRule(ruleId)) {
+            DeathGameMod.getInstance().getGameManager().saveState();
             context.getSource().sendFeedback(
                 () -> Text.literal("Правило #" + ruleId + " отключено.").formatted(Formatting.YELLOW),
                 true
@@ -77,6 +79,7 @@ public class RuleCommand {
         }
         
         if (ruleManager.revealRule(ruleId)) {
+            DeathGameMod.getInstance().getGameManager().saveState();
             context.getSource().sendFeedback(
                 () -> Text.literal("Правило #" + ruleId + " раскрыто!").formatted(Formatting.GOLD),
                 true
@@ -97,7 +100,7 @@ public class RuleCommand {
             false
         );
         
-        for (int i = 1; i <= 10; i++) {
+        for (int i = 1; i <= RuleManager.TOTAL_RULES; i++) {
             final int ruleId = i;
             boolean enabled = ruleManager.isRuleEnabled(ruleId);
             boolean revealed = ruleManager.isRuleRevealed(ruleId);
@@ -114,7 +117,7 @@ public class RuleCommand {
         }
         
         source.sendFeedback(
-            () -> Text.literal("Раскрыто: " + ruleManager.getRevealedCount() + "/10").formatted(Formatting.YELLOW),
+            () -> Text.literal("Раскрыто: " + ruleManager.getRevealedCount() + "/" + RuleManager.TOTAL_RULES).formatted(Formatting.YELLOW),
             false
         );
         

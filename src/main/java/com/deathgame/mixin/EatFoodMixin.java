@@ -1,9 +1,11 @@
 package com.deathgame.mixin;
 
 import com.deathgame.DeathGameMod;
-import com.deathgame.rule.rules.Rule7HungerOverflow;
-import net.minecraft.component.type.FoodComponent;
+import com.deathgame.rule.rules.Rule01EatLookingAtBlock;
+import com.deathgame.rule.rules.Rule05Halal;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.world.World;
@@ -12,32 +14,33 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(LivingEntity.class)
+@Mixin(Item.class)
 public abstract class EatFoodMixin {
-    
-    @Inject(method = "eatFood", at = @At("TAIL"))
-    private void onEatFoodTail(World world, ItemStack stack, FoodComponent foodComponent, CallbackInfoReturnable<ItemStack> cir) {
-        LivingEntity self = (LivingEntity) (Object) this;
-        
-        if (!(self instanceof ServerPlayerEntity player)) {
-            return;
-        }
-        
-        // Check if HungerMixin flagged this as an overflow
-        if (Rule7HungerOverflow.isPendingKill()) {
-            Rule7HungerOverflow.clearPendingKill();
-            
-            try {
-                Rule7HungerOverflow rule = (Rule7HungerOverflow) DeathGameMod.getInstance()
-                    .getRuleManager().getRuleById(7);
-                
-                if (rule != null && rule.shouldKillPlayer(player)) {
-                    DeathGameMod.LOGGER.info("[Rule7 DEBUG] Killing player for hunger overflow");
-                    rule.killPlayerForViolation(player);
-                }
-            } catch (Exception e) {
-                // Ignore if game not initialized
+
+    @Inject(method = "finishUsing", at = @At("HEAD"))
+    private void onFinishUsing(ItemStack stack, World world, LivingEntity user, CallbackInfoReturnable<ItemStack> cir) {
+        if (world.isClient()) return;
+        if (!(user instanceof ServerPlayerEntity player)) return;
+
+        // Check if this item is food
+        if (stack.get(DataComponentTypes.FOOD) == null) return;
+
+        try {
+            // Rule 1: Can't eat while looking at blocks
+            Rule01EatLookingAtBlock rule1 = (Rule01EatLookingAtBlock) DeathGameMod.getInstance()
+                .getRuleManager().getRuleById(1);
+            if (rule1 != null) {
+                rule1.onPlayerEat(player);
             }
+            
+            // Rule 5: Halal - can't eat pork
+            Rule05Halal rule5 = (Rule05Halal) DeathGameMod.getInstance()
+                .getRuleManager().getRuleById(5);
+            if (rule5 != null) {
+                rule5.onPlayerEat(player, stack.getItem());
+            }
+        } catch (Exception e) {
+            // Ignore if game not initialized
         }
     }
 }

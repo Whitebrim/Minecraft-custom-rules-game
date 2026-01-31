@@ -28,6 +28,7 @@ import it.unimi.dsi.fastutil.ints.IntList;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -48,6 +49,7 @@ public class GameManager {
     public void setServer(MinecraftServer server) {
         this.server = server;
         initScoreboard();
+        loadState();
     }
     
     private void initScoreboard() {
@@ -70,6 +72,70 @@ public class GameManager {
         scoreboard.setObjectiveSlot(ScoreboardDisplaySlot.SIDEBAR, objective);
     }
     
+    /**
+     * Load saved game state from disk
+     */
+    private void loadState() {
+        GameStateSaver.GameState state = GameStateSaver.loadState(server);
+        if (state == null) return;
+        
+        // Restore game running status
+        gameRunning = state.gameRunning;
+        
+        // Restore participants
+        participants.clear();
+        for (String uuidStr : state.participants) {
+            try {
+                participants.add(UUID.fromString(uuidStr));
+            } catch (IllegalArgumentException e) {
+                DeathGameMod.LOGGER.warn("Invalid UUID in saved state: {}", uuidStr);
+            }
+        }
+        
+        // Restore rule states
+        ruleManager.restoreState(state.enabledRules, state.revealedRules);
+        
+        // Restore player scores
+        restoreScores(state.playerScores);
+        
+        if (gameRunning) {
+            DeathGameMod.LOGGER.info("Restored running game with {} participants", participants.size());
+            broadcastMessage(Text.literal("Игра восстановлена после перезапуска сервера.").formatted(Formatting.GREEN));
+        }
+    }
+    
+    /**
+     * Restore player scores from saved state
+     */
+    private void restoreScores(Map<String, Integer> playerScores) {
+        if (server == null || objective == null) return;
+        
+        Scoreboard scoreboard = server.getScoreboard();
+        
+        for (Map.Entry<String, Integer> entry : playerScores.entrySet()) {
+            String playerName = entry.getKey();
+            int score = entry.getValue();
+            
+            // Try to find the player
+            ServerPlayerEntity player = server.getPlayerManager().getPlayer(playerName);
+            if (player != null) {
+                ScoreAccess scoreAccess = scoreboard.getOrCreateScore(player, objective);
+                scoreAccess.setScore(score);
+            } else {
+                // Player not online, but we need to restore their score
+                // The scoreboard will keep it when they rejoin
+                scoreboard.getOrCreateScore(() -> playerName, objective).setScore(score);
+            }
+        }
+    }
+    
+    /**
+     * Save current game state to disk
+     */
+    public void saveState() {
+        GameStateSaver.saveState(server, this, ruleManager);
+    }
+    
     public boolean addParticipant(ServerPlayerEntity player) {
         if (gameRunning) {
             player.sendMessage(Text.literal("Игра уже запущена!").formatted(Formatting.RED));
@@ -90,6 +156,8 @@ public class GameManager {
         updateScoreboardForPlayer(player, 0);
         
         broadcastMessage(Text.literal(player.getName().getString() + " присоединился к игре! (" + participants.size() + "/" + MAX_PARTICIPANTS + ")").formatted(Formatting.GREEN));
+        
+        saveState();
         return true;
     }
     
@@ -107,6 +175,8 @@ public class GameManager {
         removeFromScoreboard(player);
         
         broadcastMessage(Text.literal(player.getName().getString() + " вышел из игры.").formatted(Formatting.YELLOW));
+        
+        saveState();
         return true;
     }
     
@@ -125,6 +195,7 @@ public class GameManager {
             for (var holder : scoreboard.getKnownScoreHolders()) {
                 if (holder.getNameForScoreboard().equals(playerName)) {
                     participants.remove(uuid);
+                    saveState();
                     return true;
                 }
             }
@@ -151,6 +222,8 @@ public class GameManager {
         Scoreboard scoreboard = server.getScoreboard();
         ScoreAccess scoreAccess = scoreboard.getOrCreateScore(player, objective);
         scoreAccess.setScore(scoreAccess.getScore() + 1);
+        
+        saveState();
     }
     
     public boolean startGame() {
@@ -162,7 +235,7 @@ public class GameManager {
         
         broadcastMessage(Text.literal("═══════════════════════════════").formatted(Formatting.DARK_RED));
         broadcastMessage(Text.literal("       DEATH GAME НАЧИНАЕТСЯ!").formatted(Formatting.RED, Formatting.BOLD));
-        broadcastMessage(Text.literal("  Отгадайте все 10 правил или убейте Дракона!").formatted(Formatting.GOLD));
+        broadcastMessage(Text.literal("  Отгадайте все " + RuleManager.TOTAL_RULES + " правил или убейте Дракона!").formatted(Formatting.GOLD));
         broadcastMessage(Text.literal("═══════════════════════════════").formatted(Formatting.DARK_RED));
         
         // Reset scores
@@ -173,6 +246,7 @@ public class GameManager {
             }
         }
         
+        saveState();
         return true;
     }
     
@@ -186,6 +260,7 @@ public class GameManager {
         broadcastMessage(Text.literal("       ИГРА ОСТАНОВЛЕНА").formatted(Formatting.GRAY, Formatting.BOLD));
         broadcastMessage(Text.literal("═══════════════════════════════").formatted(Formatting.GRAY));
         
+        saveState();
         return true;
     }
     
@@ -200,6 +275,9 @@ public class GameManager {
             scoreboard.removeObjective(objective);
             initScoreboard();
         }
+        
+        // Delete saved state
+        GameStateSaver.deleteState(server);
         
         broadcastMessage(Text.literal("Игра полностью сброшена.").formatted(Formatting.YELLOW));
     }
@@ -227,7 +305,7 @@ public class GameManager {
         if (!gameRunning) return;
         
         int revealedCount = ruleManager.getRevealedCount();
-        if (revealedCount >= 10) {
+        if (revealedCount >= RuleManager.TOTAL_RULES) {
             triggerVictory("Все правила отгаданы!");
         }
     }
@@ -252,6 +330,8 @@ public class GameManager {
         broadcastMessage(Text.literal("       ИГРОКИ ПОБЕДИЛИ!").formatted(Formatting.GREEN, Formatting.BOLD));
         broadcastMessage(Text.literal("       " + reason).formatted(Formatting.YELLOW));
         broadcastMessage(Text.literal("═══════════════════════════════").formatted(Formatting.GOLD));
+        
+        saveState();
     }
     
     private void spawnVictoryFireworks(ServerPlayerEntity player) {

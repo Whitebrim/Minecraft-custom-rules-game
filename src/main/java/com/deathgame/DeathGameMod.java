@@ -35,20 +35,26 @@ public class DeathGameMod implements DedicatedServerModInitializer {
         registerCommands();
         registerEvents();
         
-        LOGGER.info("Death Game mod initialized!");
+        LOGGER.info("Death Game mod initialized with {} rules!", RuleManager.TOTAL_RULES);
     }
     
     private void registerRules() {
-        ruleManager.registerRule(new Rule1SimultaneousJump());
-        ruleManager.registerRule(new Rule2NoShiftCraft());
-        ruleManager.registerRule(new Rule3MutualGaze());
-        ruleManager.registerRule(new Rule4FallDamageTransfer());
-        ruleManager.registerRule(new Rule5EmptyHotbar());
-        ruleManager.registerRule(new Rule6BerlordItems());
-        ruleManager.registerRule(new Rule7HungerOverflow());
-        ruleManager.registerRule(new Rule8SameYLevel());
-        ruleManager.registerRule(new Rule9SameXZLine());
-        ruleManager.registerRule(new Rule10SameBlockMining());
+        // Season 2 Rules
+        ruleManager.registerRule(new Rule01EatLookingAtBlock());
+        ruleManager.registerRule(new Rule02NoPickupDuplicates());
+        ruleManager.registerRule(new Rule03NoSameGUI());
+        ruleManager.registerRule(new Rule04NoSynchronizedAction());
+        ruleManager.registerRule(new Rule05Halal());
+        ruleManager.registerRule(new Rule06NoBreakBelowIfOthersHave());
+        ruleManager.registerRule(new Rule07LoveTriangle());
+        ruleManager.registerRule(new Rule08MaxDistance());
+        ruleManager.registerRule(new Rule09FibonacciHotbar());
+        ruleManager.registerRule(new Rule10NoCraftDuplicates());
+        ruleManager.registerRule(new Rule11NoAFK());
+        ruleManager.registerRule(new Rule12NoLookAtSky());
+        ruleManager.registerRule(new Rule13NoTreeShadow());
+        ruleManager.registerRule(new Rule14NoAttackPlayers());
+        ruleManager.registerRule(new Rule15NoChat());
     }
     
     private void registerCommands() {
@@ -63,6 +69,12 @@ public class DeathGameMod implements DedicatedServerModInitializer {
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             gameManager.setServer(server);
             ruleManager.setServer(server);
+        });
+        
+        // Save state when server is stopping
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+            LOGGER.info("Server stopping, saving game state...");
+            gameManager.saveState();
         });
         
         ServerTickEvents.END_SERVER_TICK.register(server -> {

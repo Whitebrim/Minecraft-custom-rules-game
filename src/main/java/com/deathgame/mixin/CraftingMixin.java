@@ -1,8 +1,9 @@
 package com.deathgame.mixin;
 
 import com.deathgame.DeathGameMod;
-import com.deathgame.rule.rules.Rule2NoShiftCraft;
+import com.deathgame.rule.rules.Rule10NoCraftDuplicates;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.screen.CraftingScreenHandler;
 import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.screen.ScreenHandler;
@@ -42,11 +43,6 @@ public abstract class CraftingMixin {
             return;
         }
         
-        // Check if action is shift-click
-        if (actionType != SlotActionType.QUICK_MOVE) {
-            return;
-        }
-        
         // Check if the slot exists and is a crafting result slot
         if (slotIndex < 0 || slotIndex >= self.slots.size()) {
             return;
@@ -58,15 +54,17 @@ public abstract class CraftingMixin {
         }
         
         // Check if there's actually an item to take
-        if (slot.getStack().isEmpty()) {
+        ItemStack resultStack = slot.getStack();
+        if (resultStack.isEmpty()) {
             return;
         }
         
         try {
-            Rule2NoShiftCraft rule = (Rule2NoShiftCraft) DeathGameMod.getInstance()
-                .getRuleManager().getRuleById(2);
+            // Rule 10: Can't craft items that another player has
+            Rule10NoCraftDuplicates rule = (Rule10NoCraftDuplicates) DeathGameMod.getInstance()
+                .getRuleManager().getRuleById(10);
             
-            if (rule != null && rule.shouldKillPlayer(serverPlayer)) {
+            if (rule != null && rule.shouldKillOnCraft(serverPlayer, resultStack)) {
                 deathgame_shouldKill = true;
                 deathgame_playerToKill = serverPlayer;
             }
@@ -79,8 +77,8 @@ public abstract class CraftingMixin {
     private void onSlotClickTail(int slotIndex, int button, SlotActionType actionType, PlayerEntity player, CallbackInfo ci) {
         if (deathgame_shouldKill && deathgame_playerToKill != null) {
             try {
-                Rule2NoShiftCraft rule = (Rule2NoShiftCraft) DeathGameMod.getInstance()
-                    .getRuleManager().getRuleById(2);
+                Rule10NoCraftDuplicates rule = (Rule10NoCraftDuplicates) DeathGameMod.getInstance()
+                    .getRuleManager().getRuleById(10);
                 
                 if (rule != null) {
                     rule.killPlayerForViolation(deathgame_playerToKill);

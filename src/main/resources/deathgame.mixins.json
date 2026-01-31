@@ -5,12 +5,13 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "CraftingMixin",
-    "FallDamageMixin",
-    "ItemDropMixin",
     "ItemPickupMixin",
-    "HungerMixin",
     "EatFoodMixin",
-    "BlockBreakMixin"
+    "BlockBreakMixin",
+    "AttackMixin",
+    "ChatMixin",
+    "PlayerDamageMixin",
+    "EntityDeathMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -12,14 +12,17 @@ import java.util.List;
 import java.util.Map;
 
 public class RuleManager {
+    // Total number of rules in the game - easy to change for different seasons
+    public static final int TOTAL_RULES = 15;
+    
     private final List<Rule> rules = new ArrayList<>();
     private final Map<Integer, Boolean> enabledRules = new HashMap<>();
     private final Map<Integer, Boolean> revealedRules = new HashMap<>();
     private MinecraftServer server;
     
     public RuleManager() {
-        // Initialize 10 placeholder rules
-        for (int i = 1; i <= 10; i++) {
+        // Initialize rules based on TOTAL_RULES constant
+        for (int i = 1; i <= TOTAL_RULES; i++) {
             enabledRules.put(i, true);
             revealedRules.put(i, false);
         }
@@ -46,7 +49,7 @@ public class RuleManager {
     }
     
     public boolean enableRule(int id) {
-        if (id < 1 || id > 10) return false;
+        if (id < 1 || id > TOTAL_RULES) return false;
         enabledRules.put(id, true);
         
         Rule rule = getRuleById(id);
@@ -58,7 +61,7 @@ public class RuleManager {
     }
     
     public boolean disableRule(int id) {
-        if (id < 1 || id > 10) return false;
+        if (id < 1 || id > TOTAL_RULES) return false;
         enabledRules.put(id, false);
         return true;
     }
@@ -68,7 +71,7 @@ public class RuleManager {
     }
     
     public boolean revealRule(int id) {
-        if (id < 1 || id > 10) return false;
+        if (id < 1 || id > TOTAL_RULES) return false;
         if (revealedRules.getOrDefault(id, false)) return false;
         
         revealedRules.put(id, true);
@@ -114,6 +117,10 @@ public class RuleManager {
         return count;
     }
     
+    public int getTotalRules() {
+        return TOTAL_RULES;
+    }
+    
     public Rule getRuleById(int id) {
         for (Rule rule : rules) {
             if (rule.getId() == id) {
@@ -128,7 +135,7 @@ public class RuleManager {
             rule.reset();
         }
         
-        for (int i = 1; i <= 10; i++) {
+        for (int i = 1; i <= TOTAL_RULES; i++) {
             enabledRules.put(i, true);
         }
     }
@@ -144,9 +151,48 @@ public class RuleManager {
     }
     
     public void hideAllRules() {
-        for (int i = 1; i <= 10; i++) {
+        for (int i = 1; i <= TOTAL_RULES; i++) {
             revealedRules.put(i, false);
         }
+    }
+    
+    /**
+     * Restore rule states from saved data
+     */
+    public void restoreState(Map<Integer, Boolean> savedEnabled, Map<Integer, Boolean> savedRevealed) {
+        if (savedEnabled != null) {
+            for (Map.Entry<Integer, Boolean> entry : savedEnabled.entrySet()) {
+                int id = entry.getKey();
+                if (id >= 1 && id <= TOTAL_RULES) {
+                    enabledRules.put(id, entry.getValue());
+                }
+            }
+        }
+        
+        if (savedRevealed != null) {
+            for (Map.Entry<Integer, Boolean> entry : savedRevealed.entrySet()) {
+                int id = entry.getKey();
+                if (id >= 1 && id <= TOTAL_RULES) {
+                    revealedRules.put(id, entry.getValue());
+                }
+            }
+        }
+        
+        DeathGameMod.LOGGER.info("Rule states restored: {} revealed", getRevealedCount());
+    }
+    
+    /**
+     * Get enabled rules map for saving
+     */
+    public Map<Integer, Boolean> getEnabledRules() {
+        return new HashMap<>(enabledRules);
+    }
+    
+    /**
+     * Get revealed rules map for saving
+     */
+    public Map<Integer, Boolean> getRevealedRules() {
+        return new HashMap<>(revealedRules);
     }
     
     public List<Rule> getAllRules() {

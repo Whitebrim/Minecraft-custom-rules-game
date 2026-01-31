@@ -1,7 +1,7 @@
 package com.deathgame.mixin;
 
 import com.deathgame.DeathGameMod;
-import com.deathgame.rule.rules.Rule10SameBlockMining;
+import com.deathgame.rule.rules.Rule06NoBreakBelowIfOthersHave;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
@@ -22,14 +22,13 @@ public abstract class BlockBreakMixin {
             return;
         }
         
-        Block block = state.getBlock();
-        
         try {
-            Rule10SameBlockMining rule = (Rule10SameBlockMining) DeathGameMod.getInstance()
-                .getRuleManager().getRuleById(10);
+            // Rule 6: Can't break blocks below if others have them
+            Rule06NoBreakBelowIfOthersHave rule = (Rule06NoBreakBelowIfOthersHave) DeathGameMod.getInstance()
+                .getRuleManager().getRuleById(6);
             
             if (rule != null) {
-                rule.onBlockBroken(serverPlayer, block);
+                rule.onBlockBroken(serverPlayer, pos, state);
             }
         } catch (Exception e) {
             // Ignore if game not initialized
