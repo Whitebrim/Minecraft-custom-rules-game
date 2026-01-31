@@ -61,7 +61,7 @@ public class Rule4FallDamageTransfer extends AbstractRule {
                 for (ServerPlayerEntity p : gameManager.getServer().getPlayerManager().getPlayerList()) {
                     p.sendMessage(Text.literal(otherPlayer.getName().getString() + " погиб от: " + ruleName).formatted(Formatting.RED));
                 }
-                otherPlayer.damage(otherPlayer.getDamageSources().generic(), Float.MAX_VALUE);
+                otherPlayer.damage(otherPlayer.getServerWorld(), otherPlayer.getDamageSources().magic(), Float.MAX_VALUE);
             }
         }
         

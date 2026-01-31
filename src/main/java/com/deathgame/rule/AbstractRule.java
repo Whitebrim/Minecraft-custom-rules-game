@@ -44,7 +44,7 @@ public abstract class AbstractRule implements Rule {
         DeathGameMod.getInstance().getGameManager().onRuleTriggered(player, id);
         
         // Kill the player with generic damage
-        player.damage(player.getDamageSources().generic(), Float.MAX_VALUE);
+        player.damage(player.getServerWorld(), player.getDamageSources().magic(), Float.MAX_VALUE);
     }
     
     protected boolean isValidTarget(ServerPlayerEntity player) {
