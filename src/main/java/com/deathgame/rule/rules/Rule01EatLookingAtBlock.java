@@ -23,7 +23,7 @@ public class Rule01EatLookingAtBlock extends AbstractRule {
         if (!isValidTarget(player)) return;
         
         // Check if player is looking at a block
-        HitResult hitResult = player.raycast(5.0, 0, false);
+        HitResult hitResult = player.raycast(4.5, 0, false);
         if (hitResult.getType() == HitResult.Type.BLOCK) {
             DeathGameMod.LOGGER.info("[Rule1] Player {} ate while looking at block", player.getName().getString());
             killPlayer(player);

@@ -2,6 +2,7 @@ package com.deathgame.mixin;
 
 import com.deathgame.DeathGameMod;
 import com.deathgame.rule.rules.Rule05Halal;
+import com.deathgame.rule.rules.Rule19NoSwitchHostileMob;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import org.spongepowered.asm.mixin.Mixin;
@@ -18,11 +19,19 @@ public abstract class EntityDeathMixin {
         
         try {
             // Notify Rule 5 about entity death (for peaceful animal tracking)
-            Rule05Halal rule = (Rule05Halal) DeathGameMod.getInstance()
+            Rule05Halal rule5 = (Rule05Halal) DeathGameMod.getInstance()
                 .getRuleManager().getRuleById(5);
             
-            if (rule != null) {
-                rule.onEntityDeath(self);
+            if (rule5 != null) {
+                rule5.onEntityDeath(self);
+            }
+            
+            // Notify Rule 19 about entity death (for hostile mob tracking)
+            Rule19NoSwitchHostileMob rule19 = (Rule19NoSwitchHostileMob) DeathGameMod.getInstance()
+                .getRuleManager().getRuleById(19);
+            
+            if (rule19 != null) {
+                rule19.onHostileMobDeath(self);
             }
         } catch (Exception e) {
             // Ignore if game not initialized

@@ -11,7 +11,8 @@
     "AttackMixin",
     "ChatMixin",
     "PlayerDamageMixin",
-    "EntityDeathMixin"
+    "EntityDeathMixin",
+    "MiningMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -55,6 +55,11 @@ public class DeathGameMod implements DedicatedServerModInitializer {
         ruleManager.registerRule(new Rule13NoTreeShadow());
         ruleManager.registerRule(new Rule14NoAttackPlayers());
         ruleManager.registerRule(new Rule15NoChat());
+        ruleManager.registerRule(new Rule16NoWalkBackward());
+        ruleManager.registerRule(new Rule17NoSimultaneousMining());
+        ruleManager.registerRule(new Rule18XpSlotsLimit());
+        ruleManager.registerRule(new Rule19NoSwitchHostileMob());
+        ruleManager.registerRule(new Rule20JumpLimit());
     }
     
     private void registerCommands() {

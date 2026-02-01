@@ -3,6 +3,7 @@ package com.deathgame.mixin;
 import com.deathgame.DeathGameMod;
 import com.deathgame.rule.rules.Rule05Halal;
 import com.deathgame.rule.rules.Rule14NoAttackPlayers;
+import com.deathgame.rule.rules.Rule19NoSwitchHostileMob;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -40,6 +41,14 @@ public abstract class AttackMixin {
             if (rule5 != null) {
                 // We don't know the damage yet, so we pass 0 and let the rule track
                 rule5.onPlayerAttack(attacker, target, 0);
+            }
+            
+            // Rule 19: Can't switch hostile mobs while previous is alive
+            Rule19NoSwitchHostileMob rule19 = (Rule19NoSwitchHostileMob) DeathGameMod.getInstance()
+                .getRuleManager().getRuleById(19);
+            
+            if (rule19 != null) {
+                rule19.onPlayerAttack(attacker, target);
             }
         } catch (Exception e) {
             // Ignore if game not initialized

@@ -13,7 +13,7 @@ import java.util.Map;
 
 public class RuleManager {
     // Total number of rules in the game - easy to change for different seasons
-    public static final int TOTAL_RULES = 15;
+    public static final int TOTAL_RULES = 20;
     
     private final List<Rule> rules = new ArrayList<>();
     private final Map<Integer, Boolean> enabledRules = new HashMap<>();

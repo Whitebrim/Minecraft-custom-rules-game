@@ -26,18 +26,18 @@ public abstract class EatFoodMixin {
         if (stack.get(DataComponentTypes.FOOD) == null) return;
 
         try {
+            // Rule 5: Halal - can't eat pork
+            Rule05Halal rule5 = (Rule05Halal) DeathGameMod.getInstance()
+                    .getRuleManager().getRuleById(5);
+            if (rule5 != null) {
+                rule5.onPlayerEat(player, stack.getItem());
+            }
+
             // Rule 1: Can't eat while looking at blocks
             Rule01EatLookingAtBlock rule1 = (Rule01EatLookingAtBlock) DeathGameMod.getInstance()
                 .getRuleManager().getRuleById(1);
             if (rule1 != null) {
                 rule1.onPlayerEat(player);
-            }
-            
-            // Rule 5: Halal - can't eat pork
-            Rule05Halal rule5 = (Rule05Halal) DeathGameMod.getInstance()
-                .getRuleManager().getRuleById(5);
-            if (rule5 != null) {
-                rule5.onPlayerEat(player, stack.getItem());
             }
         } catch (Exception e) {
             // Ignore if game not initialized
