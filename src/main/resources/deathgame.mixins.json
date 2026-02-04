@@ -8,9 +8,8 @@
     "FallDamageMixin",
     "ItemDropMixin",
     "ItemPickupMixin",
-    "HungerMixin",
-    "EatFoodMixin",
-    "BlockBreakMixin"
+    "BlockBreakMixin",
+    "FoodComponentMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -19,12 +19,12 @@ import java.util.UUID;
  * or when berlord dies.
  */
 public class Rule6BerlordItems extends AbstractRule {
-    
-    public static final UUID BERLORD_UUID = UUID.fromString("11d18987-976e-31fe-b675-553586d4b164");
-    public static final String BERLORD_NAME = "tea7640";
+
+    public static final UUID BERLORD_UUID = UUID.fromString("55780bed-96ed-3d3f-b988-291d43312cf7");
+    public static final String BERLORD_NAME = "BotKot1k_";
     public static final String INFECTED_TAG = "deathgame_item_infected";
-    
-    public Rule6BerlordItems() { super(6, "Предметы, выброшенные tea7640'ом, убивают других игроков"); }
+
+    public Rule6BerlordItems() { super(6, "Предметы, выброшенные " + BERLORD_NAME + ", убивают других игроков"); }
     
     /**
      * Called when any player drops an item
