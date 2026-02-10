@@ -26,6 +26,12 @@ public class RuleCommand {
                 .then(CommandManager.literal("reveal")
                     .then(CommandManager.argument("id", IntegerArgumentType.integer(1, RuleManager.TOTAL_RULES))
                         .executes(RuleCommand::revealRule)))
+                .then(CommandManager.literal("hide")
+                    .then(CommandManager.argument("id", IntegerArgumentType.integer(1, RuleManager.TOTAL_RULES))
+                        .executes(RuleCommand::hideRule)))
+                .then(CommandManager.literal("solve")
+                    .then(CommandManager.argument("id", IntegerArgumentType.integer(1, RuleManager.TOTAL_RULES))
+                        .executes(RuleCommand::solveRule)))
         );
         
         // /rulelist - available to all players
@@ -89,6 +95,57 @@ public class RuleCommand {
             context.getSource().sendError(Text.literal("Не удалось раскрыть правило #" + ruleId));
             return 0;
         }
+    }
+    
+    private static int hideRule(CommandContext<ServerCommandSource> context) {
+        int ruleId = IntegerArgumentType.getInteger(context, "id");
+        RuleManager ruleManager = DeathGameMod.getInstance().getRuleManager();
+        
+        if (!ruleManager.isRuleRevealed(ruleId)) {
+            context.getSource().sendError(Text.literal("Правило #" + ruleId + " уже скрыто!"));
+            return 0;
+        }
+        
+        if (ruleManager.hideRule(ruleId)) {
+            DeathGameMod.getInstance().getGameManager().saveState();
+            context.getSource().sendFeedback(
+                () -> Text.literal("Правило #" + ruleId + " скрыто.").formatted(Formatting.GRAY),
+                true
+            );
+            return 1;
+        } else {
+            context.getSource().sendError(Text.literal("Не удалось скрыть правило #" + ruleId));
+            return 0;
+        }
+    }
+    
+    private static int solveRule(CommandContext<ServerCommandSource> context) {
+        int ruleId = IntegerArgumentType.getInteger(context, "id");
+        RuleManager ruleManager = DeathGameMod.getInstance().getRuleManager();
+        
+        boolean revealed = ruleManager.isRuleRevealed(ruleId);
+        boolean needReveal = !revealed;
+        
+        if (needReveal) {
+            ruleManager.revealRule(ruleId);
+        }
+        ruleManager.disableRule(ruleId);
+        
+        DeathGameMod.getInstance().getGameManager().saveState();
+        DeathGameMod.getInstance().getGameManager().checkVictoryByRules();
+        
+        if (needReveal) {
+            context.getSource().sendFeedback(
+                () -> Text.literal("Правило #" + ruleId + " раскрыто и отключено!").formatted(Formatting.GOLD),
+                true
+            );
+        } else {
+            context.getSource().sendFeedback(
+                () -> Text.literal("Правило #" + ruleId + " уже было раскрыто, отключено.").formatted(Formatting.YELLOW),
+                true
+            );
+        }
+        return 1;
     }
     
     private static int listRules(CommandContext<ServerCommandSource> context) {

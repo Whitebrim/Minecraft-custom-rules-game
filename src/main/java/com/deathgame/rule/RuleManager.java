@@ -101,6 +101,27 @@ public class RuleManager {
         return revealedRules.getOrDefault(id, false);
     }
     
+    public boolean hideRule(int id) {
+        if (id < 1 || id > TOTAL_RULES) return false;
+        if (!revealedRules.getOrDefault(id, false)) return false; // already hidden
+        
+        revealedRules.put(id, false);
+        
+        if (server != null) {
+            Text message = Text.literal("═══════════════════════════════").formatted(Formatting.DARK_GRAY);
+            Text ruleText = Text.literal("ПРАВИЛО #" + id + " СКРЫТО!").formatted(Formatting.GRAY, Formatting.BOLD);
+            Text separator = Text.literal("═══════════════════════════════").formatted(Formatting.DARK_GRAY);
+            
+            for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+                player.sendMessage(message);
+                player.sendMessage(ruleText);
+                player.sendMessage(separator);
+            }
+        }
+        
+        return true;
+    }
+    
     public String getRuleDescription(int id) {
         Rule rule = getRuleById(id);
         if (rule != null) {

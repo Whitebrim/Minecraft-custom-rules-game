@@ -7,6 +7,8 @@ import net.minecraft.component.type.FireworkExplosionComponent;
 import net.minecraft.component.type.FireworksComponent;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.boss.BossBar;
+import net.minecraft.entity.boss.ServerBossBar;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.projectile.FireworkRocketEntity;
 import net.minecraft.item.ItemStack;
@@ -26,6 +28,7 @@ import net.minecraft.util.Formatting;
 import it.unimi.dsi.fastutil.ints.IntList;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -38,9 +41,12 @@ public class GameManager {
     
     private final RuleManager ruleManager;
     private final Set<UUID> participants = new HashSet<>();
+    private final Map<UUID, Integer> lastDeathRule = new HashMap<>(); // Track which rule killed a player
     private MinecraftServer server;
     private boolean gameRunning = false;
     private ScoreboardObjective objective;
+    private long elapsedTicks = 0;
+    private ServerBossBar timerBossBar;
     
     public GameManager(RuleManager ruleManager) {
         this.ruleManager = ruleManager;
@@ -49,7 +55,37 @@ public class GameManager {
     public void setServer(MinecraftServer server) {
         this.server = server;
         initScoreboard();
+        initBossBar();
         loadState();
+    }
+    
+    private void initBossBar() {
+        if (server == null) return;
+        timerBossBar = new ServerBossBar(
+            Text.literal("⏱ 00:00:00").formatted(Formatting.AQUA),
+            BossBar.Color.BLUE,
+            BossBar.Style.PROGRESS
+        );
+        timerBossBar.setPercent(0.0f);
+    }
+    
+    /**
+     * Called every server tick. Increments game timer and updates bossbar.
+     */
+    public void tick() {
+        if (!gameRunning || server == null) return;
+        
+        elapsedTicks++;
+        
+        // Update bossbar every 20 ticks (1 second)
+        if (elapsedTicks % 20 == 0) {
+            updateTimerBossBar();
+        }
+        
+        // Sync bossbar players (add new, remove gone)
+        if (elapsedTicks % 100 == 0) {
+            syncBossBarPlayers();
+        }
     }
     
     private void initScoreboard() {
@@ -82,6 +118,9 @@ public class GameManager {
         // Restore game running status
         gameRunning = state.gameRunning;
         
+        // Restore elapsed ticks
+        elapsedTicks = state.elapsedTicks;
+        
         // Restore participants
         participants.clear();
         for (String uuidStr : state.participants) {
@@ -99,8 +138,10 @@ public class GameManager {
         restoreScores(state.playerScores);
         
         if (gameRunning) {
-            DeathGameMod.LOGGER.info("Restored running game with {} participants", participants.size());
+            DeathGameMod.LOGGER.info("Restored running game with {} participants, elapsed {}",
+                participants.size(), formatTime(elapsedTicks));
             broadcastMessage(Text.literal("Игра восстановлена после перезапуска сервера.").formatted(Formatting.GREEN));
+            showBossBar();
         }
     }
     
@@ -231,12 +272,17 @@ public class GameManager {
         if (participants.isEmpty()) return false;
         
         gameRunning = true;
+        elapsedTicks = 0;
+        lastDeathRule.clear();
         ruleManager.resetAllRules();
         
         broadcastMessage(Text.literal("═══════════════════════════════").formatted(Formatting.DARK_RED));
         broadcastMessage(Text.literal("       DEATH GAME НАЧИНАЕТСЯ!").formatted(Formatting.RED, Formatting.BOLD));
         broadcastMessage(Text.literal("  Отгадайте все " + RuleManager.TOTAL_RULES + " правил или убейте Дракона!").formatted(Formatting.GOLD));
         broadcastMessage(Text.literal("═══════════════════════════════").formatted(Formatting.DARK_RED));
+        
+        // Show timer bossbar
+        showBossBar();
         
         // Reset scores
         for (UUID uuid : participants) {
@@ -255,6 +301,7 @@ public class GameManager {
         
         gameRunning = false;
         ruleManager.resetAllRules();
+        hideBossBar();
         
         broadcastMessage(Text.literal("═══════════════════════════════").formatted(Formatting.GRAY));
         broadcastMessage(Text.literal("       ИГРА ОСТАНОВЛЕНА").formatted(Formatting.GRAY, Formatting.BOLD));
@@ -266,9 +313,12 @@ public class GameManager {
     
     public void resetGame() {
         gameRunning = false;
+        elapsedTicks = 0;
+        lastDeathRule.clear();
         participants.clear();
         ruleManager.resetAllRules();
         ruleManager.hideAllRules();
+        hideBossBar();
         
         if (server != null && objective != null) {
             Scoreboard scoreboard = server.getScoreboard();
@@ -294,6 +344,9 @@ public class GameManager {
         
         incrementTriggerCount(player);
         
+        // Track which rule killed the player (for actionbar on respawn)
+        lastDeathRule.put(player.getUuid(), ruleId);
+        
         String ruleName = ruleManager.isRuleRevealed(ruleId) 
             ? ruleManager.getRuleDescription(ruleId)
             : "Правило #" + ruleId;
@@ -311,7 +364,9 @@ public class GameManager {
     }
     
     private void triggerVictory(String reason) {
+        String timeStr = formatTime(elapsedTicks);
         gameRunning = false;
+        hideBossBar();
         
         // Show victory title to all players
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
@@ -329,6 +384,7 @@ public class GameManager {
         broadcastMessage(Text.literal("═══════════════════════════════").formatted(Formatting.GOLD));
         broadcastMessage(Text.literal("       ИГРОКИ ПОБЕДИЛИ!").formatted(Formatting.GREEN, Formatting.BOLD));
         broadcastMessage(Text.literal("       " + reason).formatted(Formatting.YELLOW));
+        broadcastMessage(Text.literal("       ⏱ Время: " + timeStr).formatted(Formatting.AQUA));
         broadcastMessage(Text.literal("═══════════════════════════════").formatted(Formatting.GOLD));
         
         saveState();
@@ -404,6 +460,84 @@ public class GameManager {
         if (server == null) return;
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
             player.sendMessage(message);
+        }
+    }
+    
+    // ---- Timer & BossBar ----
+    
+    private void updateTimerBossBar() {
+        if (timerBossBar == null) return;
+        timerBossBar.setName(
+            Text.literal("⏱ " + formatTime(elapsedTicks)).formatted(Formatting.AQUA)
+        );
+        // No max time, so keep percent at 1.0 as a full bar
+        timerBossBar.setPercent(1.0f);
+    }
+    
+    private void syncBossBarPlayers() {
+        if (timerBossBar == null || server == null) return;
+        for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+            timerBossBar.addPlayer(player);
+        }
+    }
+    
+    private void showBossBar() {
+        if (timerBossBar == null || server == null) return;
+        updateTimerBossBar();
+        for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+            timerBossBar.addPlayer(player);
+        }
+    }
+    
+    private void hideBossBar() {
+        if (timerBossBar == null) return;
+        timerBossBar.clearPlayers();
+    }
+    
+    /**
+     * Add a newly connected player to the bossbar if game is running.
+     */
+    public void onPlayerJoin(ServerPlayerEntity player) {
+        if (gameRunning && timerBossBar != null) {
+            timerBossBar.addPlayer(player);
+        }
+    }
+    
+    public static String formatTime(long ticks) {
+        long totalSeconds = ticks / 20;
+        long hours = totalSeconds / 3600;
+        long minutes = (totalSeconds % 3600) / 60;
+        long seconds = totalSeconds % 60;
+        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
+    }
+    
+    public long getElapsedTicks() {
+        return elapsedTicks;
+    }
+    
+    // ---- Death reason actionbar ----
+    
+    /**
+     * Called on player respawn to show actionbar with death cause.
+     */
+    public void onPlayerRespawn(ServerPlayerEntity player) {
+        Integer ruleId = lastDeathRule.remove(player.getUuid());
+        if (ruleId != null) {
+            if (ruleManager.isRuleRevealed(ruleId)) {
+                // Revealed rule — actionbar with description
+                player.sendMessage(
+                    Text.literal("☠ Причина смерти: " + ruleManager.getRuleDescription(ruleId)).formatted(Formatting.RED),
+                    true // actionbar overlay
+                );
+            } else {
+                // Unknown rule — subtitle (more prominent)
+                player.networkHandler.sendPacket(new TitleS2CPacket(
+                    Text.empty() // empty title required for subtitle to show
+                ));
+                player.networkHandler.sendPacket(new SubtitleS2CPacket(
+                    Text.literal("Правило #" + ruleId).formatted(Formatting.RED)
+                ));
+            }
         }
     }
 }

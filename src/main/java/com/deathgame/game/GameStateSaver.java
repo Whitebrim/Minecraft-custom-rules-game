@@ -30,6 +30,7 @@ public class GameStateSaver {
         public Map<Integer, Boolean> enabledRules = new HashMap<>();
         public Map<Integer, Boolean> revealedRules = new HashMap<>();
         public Map<String, Integer> playerScores = new HashMap<>(); // Player name -> score
+        public long elapsedTicks = 0; // Game time in ticks (excluding server downtime)
         
         public GameState() {
             // Initialize default rule states
@@ -58,6 +59,9 @@ public class GameStateSaver {
             
             // Save game running status
             state.gameRunning = gameManager.isGameRunning();
+            
+            // Save elapsed ticks
+            state.elapsedTicks = gameManager.getElapsedTicks();
             
             // Save participants
             for (UUID uuid : gameManager.getParticipants()) {

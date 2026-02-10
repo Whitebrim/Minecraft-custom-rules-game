@@ -13,6 +13,8 @@ import net.minecraft.util.Formatting;
 
 import java.util.UUID;
 
+import static com.deathgame.rule.RuleManager.TOTAL_RULES;
+
 public class GameCommands {
     
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
@@ -130,6 +132,14 @@ public class GameCommands {
             false
         );
         
+        if (gameManager.isGameRunning()) {
+            String timeStr = GameManager.formatTime(gameManager.getElapsedTicks());
+            source.sendFeedback(
+                () -> Text.literal("⏱ Время: " + timeStr).formatted(Formatting.AQUA),
+                false
+            );
+        }
+        
         source.sendFeedback(
             () -> Text.literal("Участники (" + gameManager.getParticipants().size() + "/" + GameManager.MAX_PARTICIPANTS + "):").formatted(Formatting.YELLOW),
             false
@@ -148,7 +158,7 @@ public class GameCommands {
         
         int revealed = DeathGameMod.getInstance().getRuleManager().getRevealedCount();
         source.sendFeedback(
-            () -> Text.literal("Правил раскрыто: " + revealed + "/10").formatted(Formatting.AQUA),
+            () -> Text.literal("Правил раскрыто: " + revealed + "/" + TOTAL_RULES).formatted(Formatting.AQUA),
             false
         );
         

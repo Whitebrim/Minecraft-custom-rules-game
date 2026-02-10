@@ -12,6 +12,7 @@ import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,6 +86,7 @@ public class DeathGameMod implements DedicatedServerModInitializer {
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             if (gameManager.isGameRunning()) {
                 ruleManager.tick(server);
+                gameManager.tick();
             }
         });
         
@@ -92,10 +94,16 @@ public class DeathGameMod implements DedicatedServerModInitializer {
             gameManager.onEntityDeath(entity, damageSource);
         });
         
+        // Add player to bossbar on join
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            gameManager.onPlayerJoin(handler.getPlayer());
+        });
+        
         // Handle player respawn - notify rules to reset per-player state
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
             if (gameManager.isParticipant(newPlayer)) {
                 ruleManager.onPlayerRespawn(newPlayer);
+                gameManager.onPlayerRespawn(newPlayer);
             }
         });
     }
